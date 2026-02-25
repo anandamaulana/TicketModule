@@ -24,5 +24,7 @@ public static class DbExtension
     {
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>();
+        
+        context.Database.Migrate();
     }
 }

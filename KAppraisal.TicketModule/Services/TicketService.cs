@@ -147,7 +147,7 @@ public class TicketService(
 public async Task<TicketAttachmentDto> AddAttachmentAsync(string ticketId, IFormFile file)
     {
         var userId = GetUserId();
-        var folder = Path.Combine("wwwroot", "uploads", ticketId);
+        var folder = Path.Combine("uploads", ticketId);
         Directory.CreateDirectory(folder);
 
         var uniqueFileName = $"{Guid.NewGuid():N}_{file.FileName}";
