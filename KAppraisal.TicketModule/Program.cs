@@ -8,14 +8,14 @@ builder.Services.AddMapperConfiguration();
 builder.Services.AddLocalControllers();
 builder.Services.AddLocalOpenApiDocument();
 builder.Services.AddLocalCors();
+builder.Services.AddHttpClients();
 
 var app = builder.Build();
 
-app.UseStaticFiles(); 
+app.UseLocalStaticFiles(); 
 app.UseLocalCors();
 app.UseOpenApi();
 app.UseDatabase();
-app.UseStaticFiles(); 
 app.MapControllers();
 app.UseSwaggerUi();
 app.UseMiddlewares();

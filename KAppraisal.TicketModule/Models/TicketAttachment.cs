@@ -11,4 +11,7 @@ public class TicketAttachment : BaseEntity
     public string FileName { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
     public long FileSize { get; set; }
+
+    //ID Dokumen file system servive untuk downaliad & delete
+    public string? FileSystemDocumentId { get; set; }
 }

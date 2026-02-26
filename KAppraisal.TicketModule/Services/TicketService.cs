@@ -1,3 +1,4 @@
+using KAppraisal.TicketModule.Clients;
 using KAppraisal.TicketModule.Contexts;
 using KAppraisal.TicketModule.Enums;
 using KAppraisal.TicketModule.Exceptions;
@@ -18,7 +19,8 @@ public class TicketService(
     IRepository<TicketAttachment> attachmentRepository,
     TicketDbContext dbContext,
     IMapper mapper,
-    IHttpContextAccessor httpContextAccessor
+    IHttpContextAccessor httpContextAccessor,
+    IFileSystemClient fileSystemClient
 ) : ITicketService
 {
     private string GetUserId()
@@ -144,9 +146,10 @@ public class TicketService(
         await commentRepository.SoftDeleteAsync(comment);
     }
 
-public async Task<TicketAttachmentDto> AddAttachmentAsync(string ticketId, IFormFile file)
+    public async Task<TicketAttachmentDto> AddAttachmentAsync(string ticketId, IFormFile file)
     {
         var userId = GetUserId();
+        var document = await fileSystemClient.UploadAsync(file, userId);
         var folder = Path.Combine("uploads", ticketId);
         Directory.CreateDirectory(folder);
 
@@ -155,15 +158,15 @@ public async Task<TicketAttachmentDto> AddAttachmentAsync(string ticketId, IForm
 
         using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
-
         var attachment = new TicketAttachment
         {
             Id = Guid.NewGuid().ToString("N"),
             TicketId = ticketId,
             UploadedById = userId,
             FileName = file.FileName,
-            FilePath = $"/uploads/{ticketId}/{uniqueFileName}",
+            FilePath = document.Url,
             FileSize = file.Length,
+            FileSystemDocumentId = document.Id,
             TenantId = "default",
         };
         var result = await attachmentRepository.AddAsync(attachment);
@@ -172,12 +175,15 @@ public async Task<TicketAttachmentDto> AddAttachmentAsync(string ticketId, IForm
 
     public async Task DeleteAttachmentAsync(string ticketId, string attachmentId)
     {
+        var userId = GetUserId();
         var attachment = await attachmentRepository.GetByIdAsync(attachmentId);
         AppException.ThrowIfNull(attachment, ExceptionType.NotFound, $"Attachment with ID={attachmentId} not found.");
         AppException.ThrowIfTrue(attachment.TicketId != ticketId, ExceptionType.BadRequest, "Attachment does not belong to this ticket.");
 
-        if (File.Exists(attachment.FilePath))
-            File.Delete(attachment.FilePath);
+        if (!string.IsNullOrEmpty(attachment.FileSystemDocumentId))
+        {
+            await fileSystemClient.DeleteAsync(attachment.FileSystemDocumentId, userId);
+        }
 
         await attachmentRepository.SoftDeleteAsync(attachment);
     }
