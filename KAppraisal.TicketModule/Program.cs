@@ -1,4 +1,5 @@
 using KAppraisal.TicketModule.Extensions;
+using KAppraisal.TicketModule.Clients;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,17 +9,18 @@ builder.Services.AddMapperConfiguration();
 builder.Services.AddLocalControllers();
 builder.Services.AddLocalOpenApiDocument();
 builder.Services.AddLocalCors();
+builder.Services.AddScoped<IFileSystemClient, FileSystemClient>();
+// builder.Services.AddSwaggerWithUserIdHeader();
 
 var app = builder.Build();
 
-app.UseStaticFiles(); 
 app.UseLocalCors();
 app.UseOpenApi();
 app.UseDatabase();
-app.UseStaticFiles(); 
 app.MapControllers();
 app.UseSwaggerUi();
 app.UseMiddlewares();
 app.UseLocalCors();
+app.UseDeveloperExceptionPage();
 
 app.Run();

@@ -50,7 +50,7 @@ TicketModule
 ├── Enums # Enum Definitions
 ├── Mappers # AutoMapper Profile
 ├── Migrations # EF Core Migration Files
-└── wwwroot/uploads # Attachment Storage
+└── uploads # Attachment Storage
 
 ---
 
