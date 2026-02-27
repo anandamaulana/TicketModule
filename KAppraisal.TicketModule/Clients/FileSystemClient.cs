@@ -1,49 +1,76 @@
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Amazon.S3;
+using Amazon.S3.Model;
+using DotNetEnv;
+using KAppraisal.TicketModule.Helpers;
 
 namespace KAppraisal.TicketModule.Clients;
 
-public class FileSystemClient(HttpClient httpClient) : IFileSystemClient
+public class FileSystemClient : IFileSystemClient
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    private const string BucketName = "ticket-attachments";
+
+    private IAmazonS3 CreateClient()    
     {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
+        Env.Load();
+        var endpoint = Env.GetString(EnvironmentConstants.R2EndPoint, "http://127.0.0.1:9000");
+        var accessKey = Env.GetString(EnvironmentConstants.R2AccessId, "minioadmin");
+        var secretKey = Env.GetString(EnvironmentConstants.R2SecretKey, "minioadmin");
 
-    private const string BucketName = "ticket-attachments"; //.
-
-    public async Task<FileSystemDocumentDto> UploadAsync(IFormFile file, string userId)
-    {
-        using var content = new MultipartFormDataContent();
-        using var stream = file.OpenReadStream();
-
-        var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
-            file.ContentType ?? "application/octet-stream"
+        return new AmazonS3Client(
+            accessKey,
+            secretKey,
+            new AmazonS3Config
+            {
+                ServiceURL = endpoint,
+                ForcePathStyle = true
+            }
         );
-        content.Add(fileContent, "file", file.FileName);
+    }
+    
+        public async Task<FileSystemDocumentDto> UploadAsync(IFormFile file, string userId, string? folder = null)
+        {
+        var client = CreateClient();
+        var prefix = string.IsNullOrEmpty(folder) ? "uploads" : folder;
+        var key = $"{prefix}/{Guid.NewGuid():N}_{file.FileName}";
 
-        // Set X-USER-ID header agar FileSystem tahu siapa yang upload
-        httpClient.DefaultRequestHeaders.Remove("X-USER-ID");
-        httpClient.DefaultRequestHeaders.Add("X-USER-ID", userId);
+        try
+        {
+            await client.PutBucketAsync(new PutBucketRequest
+            {
+                BucketName = BucketName,
+                UseClientRegion = true
+            });
+        }
+        catch { }
 
-        var response = await httpClient.PostAsync($"/api/Files/{BucketName}", content);
-        response.EnsureSuccessStatusCode();
+        using var stream = file.OpenReadStream();
+        await client.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = BucketName,
+            Key = key,
+            InputStream = stream,
+            ContentType = file.ContentType,
+            // DisablePayloadSigning = true
+        });
 
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<FileSystemDocumentDto>(json, _jsonOptions);
+        Env.Load();
+        var endpoint = Env.GetString(EnvironmentConstants.R2EndPoint, "http://127.0.0.1:9000");
+        var url = $"{endpoint}/{BucketName}/{key}";
 
-        return result ?? throw new Exception("FileSystem returned empty response.");
+        return new FileSystemDocumentDto
+        {
+            Id = key,
+            Url = url
+        };
     }
 
     public async Task DeleteAsync(string documentId, string userId)
     {
-        httpClient.DefaultRequestHeaders.Remove("X-USER-ID");
-        httpClient.DefaultRequestHeaders.Add("X-USER-ID", userId);
-
-        var response = await httpClient.DeleteAsync($"/api/Files/{documentId}");
-        response.EnsureSuccessStatusCode();
+        var client = CreateClient();
+        await client.DeleteObjectAsync(new DeleteObjectRequest
+        {
+            BucketName = BucketName,
+            Key = documentId
+        });
     }
 }

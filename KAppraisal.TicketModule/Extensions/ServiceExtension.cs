@@ -1,3 +1,6 @@
+using Amazon.S3;
+using Amazon.S3.Model;
+using KAppraisal.TicketModule.Clients;
 using KAppraisal.TicketModule.Contexts;
 using KAppraisal.TicketModule.Repositories;
 using KAppraisal.TicketModule.Services;
@@ -18,6 +21,24 @@ public static class ServiceExtension
         services.AddTransient<ITicketService, TicketService>();
         services.AddTransient<IUserService, UserService>();
 
+        services.AddTransient<IFileSystemClient, FileSystemClient>();
+
         services.AddHttpContextAccessor();
+        services.AddTransient<IAmazonS3>(provider =>
+{
+    var config = new AmazonS3Config
+    {
+        ServiceURL = "http://127.0.0.1:9000",
+        ForcePathStyle = true,
+        UseHttp = true
+    };
+
+    return new AmazonS3Client(
+        "minioadmin",
+        "minioadmin",
+        config
+    );
+});
+
     }
 }

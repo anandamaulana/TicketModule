@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KAppraisal.TicketModule.Migrations
 {
     [DbContext(typeof(TicketDbContext))]
-    [Migration("20260223094044_InitialCreate")]
+    [Migration("20260226044036_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -101,6 +101,9 @@ namespace KAppraisal.TicketModule.Migrations
 
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("FileSystemDocumentId")
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

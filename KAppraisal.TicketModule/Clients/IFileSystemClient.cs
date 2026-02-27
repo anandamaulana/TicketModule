@@ -10,6 +10,6 @@ public class FileSystemDocumentDto
 
 public interface IFileSystemClient
 {
-    Task<FileSystemDocumentDto> UploadAsync(IFormFile file, string userId);
+    Task<FileSystemDocumentDto> UploadAsync(IFormFile file, string userId, string? folder = null);
     Task DeleteAsync(string documentId, string userId);
 }

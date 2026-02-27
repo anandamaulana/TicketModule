@@ -75,6 +75,7 @@ namespace KAppraisal.TicketModule.Migrations
                     FileName = table.Column<string>(type: "text", nullable: false),
                     FilePath = table.Column<string>(type: "text", nullable: false),
                     FileSize = table.Column<long>(type: "bigint", nullable: false),
+                    FileSystemDocumentId = table.Column<string>(type: "text", nullable: true),
                     TenantId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
